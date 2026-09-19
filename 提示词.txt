@@ -1,0 +1,69 @@
+https://chatgpt.com/s/cx_6aae9657b5808191ad7e067c98ad58ad
+https://chatgpt.com/s/cx_6aae9657b5808191ad7e067c98ad58ad
+将下面这段提示词和对话链接一起发给另一台机器上的 Codex：
+
+```text
+请先完整读取我提供的共享对话链接，然后继续我的 AI/NPU 学习任务。不要重新开始，也不要跳过当前章节评估。
+
+代码仓库：
+https://github.com/aaaaattack/ai-.git
+
+请先找到或拉取该仓库，并以仓库实际根目录作为工作目录。文档中的文件引用必须使用相对路径，不要写机器相关的绝对路径。
+
+仓库主要内容：
+- AI_NPU系统课程路线.md
+- AI_NPU学习进度.md
+- AI_NPU系统课程_第06课_L2Transformer_QKV与AttentionShape.md
+- AI_NPU代码结合学习地图.md
+- AI_NPU系统课程_L2.1_nano-vllm网络结构.svg
+- llm_learning/cs336_note_and_hw-main
+- llm_learning/nano-vllm
+- llm_learning/houmo-examples-xh2
+
+学习规则：
+1. 每完成一个章节，先批改和评估。
+2. 核心内容未达到约 80% 时，不进入下一章。
+3. 未通过时，继续在原 Markdown 文件中追加最小必要的讲解和复测。
+4. 批改必须直接写在原题答案下面，不要另外建立批改汇总表。
+5. 更新课程内容后同步更新 AI_NPU学习进度.md。
+6. 绘制网络图时使用 SVG；如果 nano-vLLM 中存在对应实现，必须先阅读实际源码，再按照真实调用关系绘图。
+7. Tensor shape 不再使用 B、S、H、A、D 这种单字母缩写，统一使用：
+   - batch_size
+   - sequence_length
+   - hidden_size
+   - num_heads
+   - head_dim
+8. 不要修改 llm_learning 中的第三方源码，除非我明确要求。
+9. 保留现有用户修改，不要擅自恢复、删除或覆盖无关文件。
+
+当前学习状态：
+- L0.1～L0.3 已通过，但 bias、特殊值和 subnormal 需要间隔复习。
+- L3 量化和 L4 性能/Roofline 已作为自学模块补充。
+- 当前正在学习第 06 课 L2.1：Transformer、Q/K/V 与 Attention Tensor shape。
+- 第一次复测为 1/4。
+- 第二轮复测中已经正确回答：
+  - head_dim=32
+  - Q/K/V shape 为 [3,4,10,32]
+  - score shape 为 [3,4,10,10]
+- 但还没有完整解释 score 最后两个 sequence_length 维度分别代表什么。
+- 当前章节尚未正式标记为通过。
+
+接手后的第一步：
+1. 阅读 AI_NPU学习进度.md。
+2. 阅读 AI_NPU系统课程_第06课_L2Transformer_QKV与AttentionShape.md 的末尾复测。
+3. 检查用户最新答案是否已经补充：
+   - 第三个维度 sequence_length 表示 query token 位置；
+   - 第四个维度 sequence_length 表示 key token 位置。
+4. 如果用户能够独立说明这两个维度，直接在原题下面批改，并将第 06 课标记为通过。
+5. 通过后再进入下一段：MHA、MQA、GQA 与 KV Cache。
+6. 下一段教学要结合：
+   - llm_learning/nano-vllm/nanovllm/models/qwen3.py
+   - llm_learning/nano-vllm/nanovllm/layers/attention.py
+   - llm_learning/nano-vllm/nanovllm/engine/model_runner.py
+   - llm_learning/nano-vllm/nanovllm/engine/block_manager.py
+7. 如果回答仍不完整，只针对这一处继续夯实，不要重新测试已经答对的 head_dim 和 shape。
+
+请先汇报你读取到的当前进度，然后从最后一个未完成问题继续提问，不要一次性讲授下一整章。
+```
+
+切换前记得将 `E:\ai-` 当前修改提交并推送，否则另一台机器只能读取对话进度，无法取得尚未推送的 Markdown 和 SVG 修改。

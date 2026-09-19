@@ -1,0 +1,54 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1400" height="1100" viewBox="0 0 1400 1100">
+<title>nano-vLLM Qwen3 网络结构与 KV Cache</title>
+<style>
+.t{font:700 28px "Microsoft YaHei",sans-serif;fill:#101828}.s{font:700 19px "Microsoft YaHei",sans-serif;fill:#174ea6}.h{font:700 15px "Microsoft YaHei",sans-serif;fill:#101828}.b{font:13px "Microsoft YaHei",sans-serif;fill:#344054}.c{font:12px Consolas,monospace;fill:#344054}.m{fill:#eef4ff;stroke:#7da6f8;stroke-width:2}.e{fill:#effaf5;stroke:#62b594;stroke-width:2}.k{fill:#fff5e8;stroke:#e7a34b;stroke-width:2}.o{fill:#fff;stroke:#98a2b3;stroke-width:1.5}.l{stroke:#344054;stroke-width:2;fill:none;marker-end:url(#a)}.bl{stroke:#2563eb;stroke-width:2;fill:none;marker-end:url(#ba)}.gl{stroke:#138a5e;stroke-width:2;fill:none;marker-end:url(#ga)}
+</style>
+<defs><marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0 10 5 0 10z" fill="#344054"/></marker><marker id="ba" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0 10 5 0 10z" fill="#2563eb"/></marker><marker id="ga" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0 10 5 0 10z" fill="#138a5e"/></marker></defs>
+<rect width="1400" height="1100" fill="white"/>
+<text x="45" y="45" class="t">nano-vLLM：Qwen3 模型前向、调度与 KV Cache</text>
+<text x="45" y="72" class="b">依据 models/qwen3.py、layers/attention.py、engine/model_runner.py、scheduler.py、block_manager.py</text>
+
+<text x="45" y="115" class="s">1. 请求调度路径（engine/）</text>
+<rect x="45" y="135" width="190" height="65" rx="10" class="e"/><text x="62" y="162" class="h">LLMEngine.generate</text><text x="62" y="184" class="c">add_request(prompt)</text>
+<rect x="285" y="135" width="190" height="65" rx="10" class="e"/><text x="302" y="162" class="h">Sequence + Tokenizer</text><text x="302" y="184" class="c">token_ids / WAITING</text>
+<rect x="525" y="135" width="210" height="65" rx="10" class="e"/><text x="542" y="162" class="h">Scheduler.schedule</text><text x="542" y="184" class="c">waiting → running</text>
+<rect x="785" y="135" width="220" height="65" rx="10" class="e"/><text x="802" y="162" class="h">ModelRunner.run</text><text x="802" y="184" class="c">prepare_* → run_model</text>
+<path d="M235 168h50M475 168h50M735 168h50" class="gl"/>
+<text x="1040" y="160" class="b">每个 step 返回完成序列，</text><text x="1040" y="182" class="b">并分别统计 Prefill/Decode 吞吐。</text>
+
+<text x="45" y="250" class="s">2. Qwen3Model.forward（models/qwen3.py）</text>
+<rect x="45" y="270" width="1310" height="255" rx="14" class="m"/>
+<rect x="75" y="325" width="180" height="75" rx="9" class="o"/><text x="91" y="353" class="h">VocabParallelEmbedding</text><text x="91" y="377" class="c">[batch_size, sequence_length] → [batch_size, sequence_length, hidden_size]</text>
+<path d="M255 362h35" class="l"/>
+<rect x="290" y="315" width="245" height="95" rx="9" class="o"/><text x="310" y="345" class="h">Qwen3DecoderLayer × L</text><text x="310" y="369" class="c">input_layernorm</text><text x="310" y="391" class="c">self_attn + residual</text>
+<path d="M535 362h35" class="l"/>
+<rect x="570" y="300" width="410" height="135" rx="9" fill="#fff" stroke="#4b83df" stroke-width="2"/><text x="590" y="330" class="h">每层：Attention → MLP</text><text x="590" y="357" class="b">RMSNorm → Qwen3Attention → residual</text><text x="590" y="383" class="b">RMSNorm → gate_up → SiluAndMul → down</text><text x="590" y="409" class="c">输出仍为 [batch_size, sequence_length, hidden_size]</text>
+<path d="M980 362h35" class="l"/>
+<rect x="1015" y="325" width="155" height="75" rx="9" class="o"/><text x="1035" y="353" class="h">Final RMSNorm</text><text x="1035" y="377" class="c">[batch_size, sequence_length, hidden_size]</text>
+<path d="M1170 362h35" class="l"/>
+<rect x="1205" y="325" width="125" height="75" rx="9" class="o"/><text x="1221" y="353" class="h">ParallelLMHead</text><text x="1221" y="377" class="c">logits</text>
+<text x="75" y="480" class="b">Qwen3ForCausalLM.compute_logits() 调用 lm_head；rank 0 的 Sampler 选择下一个 token。</text>
+
+<text x="45" y="575" class="s">3. Qwen3Attention 实际算子路径（models/qwen3.py）</text>
+<rect x="45" y="595" width="1310" height="190" rx="14" class="m"/>
+<rect x="70" y="640" width="175" height="72" rx="8" class="o"/><text x="86" y="667" class="h">QKVParallelLinear</text><text x="86" y="690" class="c">qkv_proj(hidden)</text>
+<path d="M245 676h30" class="bl"/>
+<rect x="275" y="640" width="180" height="72" rx="8" class="o"/><text x="293" y="667" class="h">qkv.split</text><text x="293" y="690" class="c">q, k, v sizes</text>
+<path d="M455 676h30" class="bl"/>
+<rect x="485" y="630" width="225" height="92" rx="8" class="o"/><text x="503" y="657" class="h">view：GQA</text><text x="503" y="681" class="c">q [num_tokens, num_heads, head_dim]</text><text x="503" y="702" class="c">k/v [num_tokens, num_kv_heads, head_dim]</text>
+<path d="M710 676h30" class="bl"/>
+<rect x="740" y="640" width="175" height="72" rx="8" class="o"/><text x="758" y="667" class="h">q_norm / k_norm</text><text x="758" y="690" class="c">bias=False 时</text>
+<path d="M915 676h30" class="bl"/>
+<rect x="945" y="640" width="175" height="72" rx="8" class="o"/><text x="963" y="667" class="h">rotary_emb</text><text x="963" y="690" class="c">RoPE(pos,q,k)</text>
+<path d="M1120 676h30" class="bl"/>
+<rect x="1150" y="630" width="175" height="92" rx="8" class="o"/><text x="1170" y="657" class="h">Attention</text><text x="1170" y="681" class="c">scale=head_dim^-1/2</text><text x="1170" y="702" class="c">→ o_proj</text>
+<text x="70" y="758" class="b">这里的 Q 头数可以大于 KV 头数；这是 nano-vLLM Qwen3 的 GQA，不是固定 Q=K=V 的教学版 MHA。</text>
+
+<text x="45" y="835" class="s">4. Attention 分支与 KV Cache（layers/attention.py + engine/）</text>
+<rect x="45" y="855" width="330" height="190" rx="12" class="k"/><text x="68" y="888" class="h">context.is_prefill ?</text><path d="M210 900v24" class="l"/>
+<rect x="65" y="935" width="125" height="82" rx="8" class="o"/><text x="83" y="962" class="h">Prefill</text><text x="77" y="985" class="c">flash_attn_varlen</text><text x="77" y="1003" class="c">cu_seqlens_q/k</text>
+<rect x="230" y="935" width="125" height="82" rx="8" class="o"/><text x="249" y="962" class="h">Decode</text><text x="240" y="985" class="c">flash_attn_with_</text><text x="240" y="1003" class="c">kvcache</text>
+<rect x="420" y="855" width="430" height="190" rx="12" class="k"/><text x="445" y="888" class="h">ModelRunner.allocate_kv_cache()</text><text x="445" y="921" class="c">[2,L,num_blocks,block_size,</text><text x="445" y="944" class="c"> num_kv_heads,head_dim]</text><text x="445" y="980" class="b">每层 Attention 绑定 k_cache / v_cache view</text><path d="M375 960h45" class="gl"/>
+<rect x="895" y="855" width="460" height="190" rx="12" class="k"/><text x="920" y="888" class="h">BlockManager + prepare_prefill/decode</text><text x="920" y="921" class="b">hash_blocks → prefix cache</text><text x="920" y="947" class="b">block_table → slot_mapping</text><text x="920" y="973" class="b">prefill：cu_seqlens；decode：last_token/context_lens</text><text x="920" y="1005" class="b">Scheduler：allocate / append / preempt / deallocate</text><path d="M850 960h45" class="gl"/>
+<rect x="45" y="1060" width="1310" height="25" rx="6" fill="#f2f4f7"/><text x="60" y="1078" class="b">阅读顺序：蓝色模型前向 → 绿色请求调度 → 橙色 KV Cache/block；理论 score [batch_size, num_heads, sequence_length, sequence_length] 不等于实际 cache 的存储布局。</text>
+</svg>

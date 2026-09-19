@@ -195,7 +195,7 @@ batch = 1
 sequence_length = 64
 ```
 
-统一采用 `[B, heads, S, head_dim]`。
+统一采用 `[batch_size, num_heads, sequence_length, head_dim]`。
 
 请回答：
 

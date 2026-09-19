@@ -16,9 +16,9 @@ CS336 课后笔记（先恢复概念和公式）
 
 本地图只引用下列本地材料，不修改它们：
 
-- `E:\cs336_note_and_hw-main\cs336_note_and_hw-main\课后笔记`：个人 CS336 学习笔记；用于复习、找回术语和已学过的推导。
-- `E:\cs336_note_and_hw-main\nano-vllm`：极简 LLM 推理引擎；用于逐函数追踪。
-- `E:\cs336_note_and_hw-main\houmo-examples-xh2`：ModelZoo；用于观察真实部署的输入、模型、性能数据和验证工具。
+- `llm_learning/cs336_note_and_hw-main/课后笔记`：个人 CS336 学习笔记；用于复习、找回术语和已学过的推导。
+- `llm_learning/nano-vllm`：极简 LLM 推理引擎；用于逐函数追踪。
+- `llm_learning/houmo-examples-xh2`：ModelZoo；用于观察真实部署的输入、模型、性能数据和验证工具。
 
 每个学习单元只产出一张小的“证据卡”，而不是尝试读完整个仓库。证据卡固定回答四件事：
 
@@ -54,12 +54,12 @@ CS336 课后笔记（先恢复概念和公式）
 阅读 `课后笔记\05_Attention.md` 的“核心公式、切分多头、RoPE、工程版 Attention”部分。只抄下并理解：
 
 ```text
-X [B,S,H]
-→ Q/K/V [B,S,H]
-→ split + transpose [B,A,S,D]
-→ scores [B,A,S,S]
-→ output [B,A,S,D]
-→ merge [B,S,H]
+X [batch_size, sequence_length, hidden_size]
+→ Q/K/V [batch_size, sequence_length, hidden_size]
+→ split + transpose [batch_size, num_heads, sequence_length, head_dim]
+→ scores [batch_size, num_heads, sequence_length, sequence_length]
+→ output [batch_size, num_heads, sequence_length, head_dim]
+→ merge [batch_size, sequence_length, hidden_size]
 ```
 
 ### 步骤 2：在 nano-vLLM 中定位同一条链（20 分钟）
@@ -85,7 +85,7 @@ X [B,S,H]
 - QKV 在 nano-vLLM 中的切分位置：
 - RoPE 应用于：
 - Prefill 与 decode 的 Attention 路径分别是：
-- `scores [B,A,S,S]` 在工程实现中为什么不显式长期保存在 HBM：
+- `scores [batch_size, num_heads, sequence_length, sequence_length]` 在工程实现中为什么不显式长期保存在 HBM：
 ```
 
 ## 四阶段学习节奏
@@ -120,8 +120,8 @@ CS336 Attention 公式
 
 完成标准不是复述源码，而是能独立回答：
 
-1. 为什么 `H=A×D` 是 Attention 代码的形状约束？
-2. 为什么 prefill 会受 `S²` Attention 影响，而 decode 的典型瓶颈更接近 KV Cache 读写？
+1. 为什么 `hidden_size=num_heads×head_dim` 是 Attention 代码的形状约束？
+2. 为什么 prefill 会受 `sequence_length²` Attention 影响，而 decode 的典型瓶颈更接近 KV Cache 读写？
 3. 为什么 prefix cache 主要改善重复上下文的 TTFT？
 4. 如果 TPOT 异常，应该先看调度、KV Cache、模型执行还是采样？为什么？
 

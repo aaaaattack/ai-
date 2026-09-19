@@ -14,8 +14,12 @@
 - 考核安排：本阶段按自学处理，不要求完成所有手算题；遇到实际量化任务时再按“First Bad Tensor → 校准/粒度 → 单层混合精度”路径深入。
 - L4 自学完成：已阅读峰值算力、阵列利用率、shape/batch、频率、稀疏峰值、带宽、Arithmetic Intensity、Roofline、融合和 layout conversion。
 - 当前交互式学习：第 06 课｜L2.1 Transformer、Q/K/V 与 Attention Tensor shape。
-- 本节目标：能从 `B、S、H、A、D` 推导 Q/K/V、attention score 和输出 Tensor shape，为后续 MHA/MQA/GQA 与 KV Cache 做准备。
+- 本节目标：能从 `batch_size、sequence_length、hidden_size、num_heads、head_dim` 推导 Q/K/V、attention score 和输出 Tensor shape，为后续 MHA/MQA/GQA 与 KV Cache 做准备。
 - 代码学习支架：已建立 `AI_NPU代码结合学习地图.md`。本课完成原有 shape 练习后，追加一张 nano-vLLM Qwen3 Attention 的代码观察卡；暂不运行模型或 ModelZoo 性能工具。
+- 第 06 课首次评估：暂不通过。核心题独立完成 2/4；第 1、4 题正确，第 2 题漏掉拆分/转置步骤，第 3 题混淆输入 hidden shape 与 score shape。
+- 第 06 课第一次复测：1/4，仅能识别 Decode 使用 `flash_attn_with_kvcache`；`head_dim=hidden_size/num_heads` 计算、`[batch_size, num_heads, sequence_length, head_dim]` 和 `[batch_size, num_heads, sequence_length, sequence_length]` 的维度顺序仍未掌握。
+- 当前处理：继续在第 06 课原文夯实，不进入下一节。已追加只含两个 shape 模板的第二轮复测，三题全部正确后再进入 MHA、MQA、GQA 与 KV Cache。
+- 第 06 课第二轮复测：`head_dim=32`、Q/K/V `[3,4,10,32]`、score `[3,4,10,10]` 均正确；但未回答 score 最后两个维度的语义，当前为 2/3 完整正确。只需补答 query 位置与 key 位置的含义，不重做其他题。
 
 ## 综合摸底试卷第 1 套
 

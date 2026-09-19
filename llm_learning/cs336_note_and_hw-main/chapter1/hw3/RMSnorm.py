@@ -1,0 +1,43 @@
+import torch
+from torch import nn
+
+class RMSNorm(nn.Module):
+    """
+    RMSNorm 是归一化技术，它通过将输入除以输入的平方根的平均值来稳定训练。
+    公式是：
+    x_norm = x / (x.pow(2).mean(dim=-1, keepdim=True) + eps).sqrt()
+    x_norm = x_norm * weight
+    
+    Args:
+        d_model (int): 经过embedding层之后，每个token的维度
+        eps (float): 一个很小的常数，用于避免除以零
+        device (torch.device): 设备
+        dtype (torch.dtype): 数据类型
+    input:
+        x: (batch_size, seq_len, d_model) 输入的稠密向量
+    output:
+        x_norm: (batch_size, seq_len, d_model) 归一化后的稠密向量
+    """
+    def __init__(self, d_model: int, eps: float = 1e-5, device=None, dtype=None):
+        super().__init__()
+        self.eps = eps
+        self.weight = nn.Parameter(torch.ones(d_model, device=device, dtype=dtype)) #weight对应缩放参数 gamma
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        # 题目要求对于不同的精度要先转换为float32再进行归一化，最后再转换回原来的精度
+        input_dtype = x.dtype
+        x = x.to(torch.float32)
+
+        variance = x.pow(2).mean(-1, keepdim=True)
+        x = x * torch.rsqrt(variance + self.eps)
+
+        return (self.weight * x).to(input_dtype)
+    
+if __name__ == '__main__':
+    device = 'cuda' if torch.cuda.is_available() else 'cpu'
+    dtype = torch.float16 if device == 'cuda' else torch.float32
+    rmsnorm = RMSNorm(512, eps=1e-5, device=device, dtype=dtype)
+    x = torch.randn(1, 10, 512, device=device, dtype=dtype)
+    x_norm = rmsnorm(x)
+    print(x_norm.shape)
+    print(f"Running on {device}, dtype={dtype}")

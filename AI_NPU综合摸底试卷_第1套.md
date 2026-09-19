@@ -173,7 +173,7 @@ Shape bucket 是折中方案：例如只编译序列长度 128、256、512 三�
 
 ## 第 3 题｜L2：模型结构（原始得分：2/10）
 
-配置：`hidden_size=4096`、`num_attention_heads=32`、`num_key_value_heads=8`、`B=2`、`S=128`。
+配置：`hidden_size=4096`、`num_attention_heads=32`、`num_key_value_heads=8`、`batch_size=2`、`sequence_length=128`。
 
 ### 1. Head dimension 与 Attention 类型
 
@@ -191,7 +191,7 @@ head_dim = hidden_size ÷ num_attention_heads
 
 **批改：原答案空缺，已补全。**
 
-统一采用 `[B, heads, S, head_dim]`：
+统一采用 `[batch_size, num_heads, sequence_length, head_dim]`：
 
 ```text
 Q: [2, 32, 128, 128]
@@ -213,7 +213,7 @@ V: [2,  8, 128, 128]
 
 **批改：原答案空缺，已补全。**
 
-Prefill 一次处理整个 prompt，Attention 的 QKᵀ 和概率矩阵乘 V 计算量大致随 `S²` 增长。减少 KV heads 会降低 K/V 投影和存储开销，但不会让所有 Query heads 的 Attention 主计算同比缩小到四分之一。
+Prefill 一次处理整个 prompt，Attention 的 QKᵀ 和概率矩阵乘 V 计算量大致随 `sequence_length²` 增长。减少 KV heads 会降低 K/V 投影和存储开销，但不会让所有 Query heads 的 Attention 主计算同比缩小到四分之一。
 
 Decode 每一步通常只有一个新 Query token，却要读取此前所有 token 的 KV Cache，因而更容易受内存容量和带宽限制。GQA 将 KV Cache 缩小到约四分之一，减少每步读取量，支持更长上下文或更大并发，因此通常对 TPOT 的改善更明显。
 
