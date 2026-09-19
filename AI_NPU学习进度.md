@@ -1,5 +1,22 @@
 # AI/NPU 学习进度
 
+## 第 01 课｜L0 二进制与 FP16：章节评估
+
+**最终结论：** 已通过夯实评估，可进入 L0.3；保留 bias、FP16 编码/解码的间隔复习。
+
+- 已具备：二进制位权与小数展开、规格化、FP16 bias 正反算、基础 FP16 编码/解码，以及 FP16/BF16 的范围和精度取舍。
+- 仍需巩固：将 bias 的编码值与真实指数清晰区分，并把位结构连接到 overflow、underflow 与实际精度 Debug。
+- 第 02 课｜L0.3：已通过，进入 L3.1；保留特殊值、subnormal 和舍入误差的间隔复习。
+- 已具备：FP16 overflow 范围判断、underflow 与舍入的基本区分、`inf`/`NaN` 的特殊编码、First Bad Tensor 定位和单变量实验原则。
+- 仍需巩固：subnormal 与特殊指数编码目前主要在讲解后能够复述，需要在后续课程中重新提取。
+- 间隔复习：第 03 课中再次将“指数全 1、尾数非 0”答为 `inf`；该规则需在后续课前继续短测。
+- 当前学习：第 03 课｜L3 量化，自学模式。已补齐对称/非对称量化、zero-point、粒度、校准、PTQ/QAT、异常值、混合精度和常见方法的参考内容。
+- 考核安排：本阶段按自学处理，不要求完成所有手算题；遇到实际量化任务时再按“First Bad Tensor → 校准/粒度 → 单层混合精度”路径深入。
+- L4 自学完成：已阅读峰值算力、阵列利用率、shape/batch、频率、稀疏峰值、带宽、Arithmetic Intensity、Roofline、融合和 layout conversion。
+- 当前交互式学习：第 06 课｜L2.1 Transformer、Q/K/V 与 Attention Tensor shape。
+- 本节目标：能从 `B、S、H、A、D` 推导 Q/K/V、attention score 和输出 Tensor shape，为后续 MHA/MQA/GQA 与 KV Cache 做准备。
+- 代码学习支架：已建立 `AI_NPU代码结合学习地图.md`。本课完成原有 shape 练习后，追加一张 nano-vLLM Qwen3 Attention 的代码观察卡；暂不运行模型或 ModelZoo 性能工具。
+
 ## 综合摸底试卷第 1 套
 
 **评估结果：** 39/100  
