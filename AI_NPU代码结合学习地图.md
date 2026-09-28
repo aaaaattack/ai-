@@ -35,11 +35,12 @@ CS336 课后笔记（先恢复概念和公式）
 
 | 当前课程模块 | CS336 笔记：概念锚点 | nano-vLLM：最小实现锚点 | ModelZoo：真实链路锚点 | 本节完成证据 |
 |---|---|---|---|---|
+| L0 二进制、FP16/BF16 | 第 01 课的浮点位结构、bias、overflow/underflow | `engine/model_runner.py`：临时设置 `hf_config.dtype`；`allocate_kv_cache`：用 `dtype.itemsize` 计算 KV block 字节数 | 后续在模型准备与精度验收中核对权重/激活 dtype | 能解释“同为 16 bit 但数值行为不同”，并手算一个 KV block 的容量 |
 | L2.1 Q/K/V、Attention shape | `05_Attention.md`、`02_RoPE.md`、`03_SwiGLU.md` | `models/qwen3.py`、`layers/attention.py`、`layers/rotary_embedding.py` | `apis/inferences/qwen3/README.MD` | 写出一次 `X → QKV → RoPE → Attention → o_proj` 的 shape 流，并标出 Q 头与 KV 头可不同 |
 | L2.2 MHA/MQA/GQA、KV Cache | `05_Attention.md`、`07_Inference.md` | `layers/attention.py`、`engine/model_runner.py` | Qwen3 推理样例与 prefix-cache demo | 说明 GQA 为什么减少 KV 存储；指出一次 token 写入 cache 的位置 |
-| L3 量化 | `生产_01_量化基础.md` 到 `生产_05_KVCache量化.md` | 先不强行从 nano-vLLM 找量化实现；它主要用作未量化推理的性能基线 | `hmodel` 下的量化/导出示例、Qwen 模型配置与精度评测工具 | 从一种量化配置中辨认权重/激活精度、校准数据和精度验收指标 |
+| L3 量化 | `生产_01_量化基础.md` 到 `生产_05_KVCache量化.md`；第 03 课补充 `w8a8h1_sefp` | `layers/linear.py` 的 `F.linear` 作为浮点基线；nano-vLLM 不含 INT8/SEFP 实现 | `hmodel` 下的量化/导出示例、Qwen 模型配置与精度评测工具 | 比较浮点与量化 Linear 的误差；区分 INT8 的 `scale` 与 SEFP 的 shared exponent；说明 outlier 如何伤害组内小值 |
 | L4 TOPS、带宽、Roofline | `08_FlashAttention.md`、`09_Profiling.md` | `bench.py`、`layers/attention.py`、`engine/model_runner.py` | `tools/computing_perf`、`tools/bandwidth_perf`、`tools/hm_check` | 用实测算力、读/写带宽画出自己的简化 Roofline，并判断一个瓶颈假设 |
-| L5 Compiler / Runtime | `TCIM_Runtime_Tensor_Buffer动态形状分析.md`、`推理性能优化系统学习路线.md` | 观察引擎如何把 Python 侧 token/shape 准备为模型调用 | `hmatc`、`hmodel`、Qwen3 样例的模型准备、C++ 推理入口 | 画出“权重/模型准备 → 编译产物 → runtime 调用 → 输出”的链路，记录每一步的输入输出 |
+| L5 Compiler / Runtime | `AI_NPU系统课程_L5_Compiler_Runtime与LUT职责边界.md`、`TCIM_Runtime_Tensor_Buffer动态形状分析.md` | 观察引擎如何把 Python 侧 token/shape 准备为模型调用 | `hmatc`、`hmodel`、Qwen3 样例的模型准备、C++ 推理入口 | 画出 `PyTorch→Q图→IR→Compiler→Runtime→NPU`；根据 First Bad Stage 区分前端、lowering 与设备问题 |
 | L6 推理引擎与调度 | `07_Inference.md`、`10_ContinuousBatching.md`、`11_PagedAttention.md`、`12_ModelRunner.md`、`13_EndToEnd.md` | `engine/llm_engine.py`、`scheduler.py`、`block_manager.py`、`sequence.py` | `apis/inferences/qwen3` 的 prefix cache / 多 batch / pipeline / speculative 示例，`tools/llm_perf` | 追踪一个请求从 waiting 到 finished；比较 prefill 与 decode 的调度单位 |
 | L7 精度 Debug | 量化笔记、`09_Profiling.md` 中的观测方法 | 用未量化 PyTorch 输出作为概念上的参考点 | `tools/hmeval` 与模型评测/量化产物 | 为“量化后回答变差”列出 First Bad Stage、指标和单变量实验 |
 | L8 性能 Debug | `09_Profiling.md`、`08_FlashAttention.md` | `bench.py`、engine 与 attention 中 prefill/decode 分支 | `tools/llm_perf`、`tools/tcim_perf`、硬件性能工具 | 将 TTFT、TPOT、prefill 吞吐、decode 吞吐和 E2E 分层；给出下一步测量 |

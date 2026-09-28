@@ -128,6 +128,18 @@ BF16 与 FP16 都是 16 bit。BF16 为什么通常比 FP16 有更大的数值范
 
 ## L3：量化
 
+### L3 补充主题：LoRA 与 QLoRA（不占正式课号）
+
+| 编号 | 题目 | 题型 | 难度 |
+|---|---|---|---|
+| L3-LORA-001 | LoRA 低秩增量的参数量与 shape | 计算 | 基础到中等 |
+| L3-LORA-002 | target modules 与 state_dict 验证 | 代码分析 | 中等 |
+| L3-LORA-003 | base、unmerged、merged、重新量化四路精度对照 | 精度实验 | 中等偏高 |
+| L3-LORA-004 | QLoRA dtype、merge 与部署路径选择 | 方案分析 | 高 |
+| L3-LORA-005 | LoRA 适配模型的客户验收 | 综合交付 | 高 |
+
+完整讲义见 [LoRA 与 QLoRA](AI_NPU系统课程_L3_LoRA与QLoRA.md)。
+
 ### 基础强化训练（第 2 轮）
 
 #### L3-002｜INT8 对称量化
@@ -271,6 +283,16 @@ BF16 与 FP16 都是 16 bit。BF16 为什么通常比 FP16 有更大的数值范
 **完整题目：** [查看试卷](AI_NPU综合摸底试卷_第1套.md#第-6-题l5compiler-与-runtime10-分)
 
 ## L6：AI Infra 和推理优化
+### L6 补充主题：投机解码与 DFlash 2（不占正式课号）
+| 编号 | 题目 | 题型 | 难度 |
+|---|---|---|---|
+| L6-SD-001 | Draft/Verify 与输出等价 | 概念分析 | 基础到中等 |
+| L6-SD-002 | 接受率、平均接受长度与 TPS | 指标计算 | 中等 |
+| L6-SD-003 | Draft model、Medusa、EAGLE、DFlash 结构对比 | 架构分析 | 中等 |
+| L6-SD-004 | DFlash 2 local convolution 与 candidate selector | 源码/机制分析 | 中等偏高 |
+| L6-SD-005 | block size、并发和验证成本的消融设计 | 性能实验 | 高 |
+| L6-SD-006 | DFlash 2 目标硬件部署验收 | 综合交付 | 高 |
+完整讲义与实战任务见 [L6 投机解码与 DFlash 2](AI_NPU系统课程_L6_投机解码与DFlash2.md)。
 
 ### LLM 在线服务
 
@@ -282,6 +304,32 @@ BF16 与 FP16 都是 16 bit。BF16 为什么通常比 FP16 有更大的数值范
 **完整题目：** [查看试卷](AI_NPU综合摸底试卷_第1套.md#第-7-题l6ai-infra-和推理优化10-分)
 
 ## L7：精度 Debug
+
+### GR00T 双案例实操任务（不编号课程）
+
+任务完整定义与作答位置保留在对应案例，题库仅建索引。
+
+| 任务编号 | 内容 | 题型 / 难度 | 来源 |
+|---|---|---|---|
+| L7-VIS-01 | 加载信息与实际权重比较 | 参数检查 / 基础 | [Visual V1](AI_NPU系统课程_L7_GR00T_Visual精度Debug实战.md) |
+| L7-VIS-02 | ONNX LN 参数与融合补偿 | 参数取证 / 中等 | 同上 V2 |
+| L7-VIS-03 | 四路实例、权重和产物来源 | 复现实验 / 中等 | 同上 V3 |
+| L7-VIS-04 | 初始化修复对照 | 代码实验 / 进阶 | 同上 V4 |
+| L7-VIS-05 | 重新导出与任务验收 | 综合 / 进阶 | 同上 V5 |
+| L7-PF-01 | 浮点 FX、禁用量化 Q 图、PTQ 消融 | 读代码 / 基础 | [Prefill P1](AI_NPU系统课程_L7_GR00T_Prefill精度Debug实战.md) |
+| L7-PF-02 | 逐 token 与逐层误差定位 | Tensor 分析 / 中等 | 同上 P2 |
+| L7-PF-03 | 固定评测集的校准实验 | 实验设计 / 中等 | 同上 P3 |
+| L7-PF-04 | MaskedSoftmax 与 GroupMatMul 混精生效 | 配置追踪 / 进阶 | 同上 P4 |
+| L7-PF-05 | 新混精产物的精度、性能和任务验收 | 综合 / 进阶 | 同上 P5 |
+
+### L7 补充实战案例：GR00T Visual 精度 Debug
+
+| 编号 | 题目 | 题型 | 难度 |
+|---|---|---|---|
+| L7-003 | 四路 cosine 表与首个可观测分叉 | 证据解读 | 中等 |
+| L7-004 | LayerNorm identity initializer 与 checkpoint 对照 | 参数取证 | 中等偏高 |
+| L7-005 | 加载后重初始化的根因与最小修复 | 代码审查 | 高 |
+| L7-006 | 重新 PTQ 的验收闭环与三方沟通 | 综合交付 | 高 |
 
 ### 基础强化训练（第 2 轮）
 

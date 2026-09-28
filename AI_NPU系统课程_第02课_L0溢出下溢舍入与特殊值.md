@@ -135,6 +135,23 @@ min、max、mean、max_abs、inf_count、nan_count
 
 ---
 
+## 七点五、nano-vLLM 代码观察：特殊值如何在采样前被控制
+
+来源：`llm_learning/nano-vllm/nanovllm/layers/sampler.py`。
+
+```python
+logits = logits.float()                                      # 先用 FP32 进行采样相关计算，降低溢出风险
+logits = logits.div_(temperatures.unsqueeze(dim=1))           # 温度缩放；温度越低，分布越尖锐
+probs = torch.softmax(logits, dim=-1)                         # 指数归一化，把 logits 变成概率
+noise = torch.empty_like(probs).exponential_(1)               # 生成指数分布噪声，用于 Gumbel-like 采样
+noise = noise.clamp_min_(1e-10)                               # 防止噪声过小导致除零或数值异常
+sample_tokens = probs.div_(noise).argmax(dim=-1)              # 选择扰动后分数最大的 token
+```
+
+这段代码对应本课的工程结论：softmax、除法和指数分布都是数值敏感操作；即使模型主干使用 FP16，也可以在采样前转为 FP32，并用 `clamp_min` 阻断除零路径。出现 `NaN` 时，优先检查 softmax 前的 logits、温度值和噪声下界。
+
+---
+
 ## 八、本课练习
 
 ### 第 1 题｜bias 复习

@@ -126,6 +126,26 @@ MAC/OPS 统计口径是否一致
 
 ---
 
+## 五点五、nano-vLLM 代码观察：Linear 的理论 MAC 估算入口
+
+来源：`llm_learning/nano-vllm/nanovllm/layers/linear.py`。nano-vLLM 通过 `F.linear` 调用底层 GEMM；课程中可用输入输出 shape 估算它的理论工作量。
+
+```python
+def forward(self, x: torch.Tensor) -> torch.Tensor:                # x[..., input_size]
+    return F.linear(x, self.weight, self.bias)                     # 输出 [..., output_size]
+```
+
+若 `x` 展平后有 `M` 个 token、输入维度为 `K`、输出维度为 `N`：
+
+```python
+macs = M * K * N                                                   # 每个输出元素完成 K 次乘加
+ops = 2 * macs                                                     # 约定一次乘法和一次加法算 2 Ops
+```
+
+这里的 `ops` 只是理论工作量，不是实测吞吐；还要受到 dtype、带宽、kernel 利用率和并行度影响。这正是 TOPS 不能直接等于模型 tokens/s 的代码入口。
+
+---
+
 ## 六、本课练习
 
 ### 第 1 题｜口径换算

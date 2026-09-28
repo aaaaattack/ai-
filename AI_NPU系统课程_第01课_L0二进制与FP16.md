@@ -315,7 +315,73 @@ FP16 与 BF16 都是 16 bit：
 
 ---
 
-## 十二、本课小结
+## 十二、nano-vLLM 代码观察：dtype 如何影响模型与 KV Cache
+
+前面的 FP16/BF16 讨论不只是“认识格式”。在 nano-vLLM 中，模型初始化和 KV Cache 分配都会直接读取 `dtype`。下面只截取最小的相关代码；每行右侧的注释说明它在做什么。
+
+### 12.1 模型初始化时临时切换 dtype
+
+来源：`llm_learning/nano-vllm/nanovllm/engine/model_runner.py` 的 `ModelRunner.__init__`。
+
+```python
+default_dtype = torch.get_default_dtype()       # 保存进程当前的默认 dtype，避免影响外部代码
+torch.set_default_dtype(hf_config.dtype)        # 临时采用模型配置的 dtype，例如 torch.float16 或 torch.bfloat16
+torch.set_default_device("cuda")               # 后续新建的参数和 Tensor 默认放到 CUDA
+self.model = Qwen3ForCausalLM(hf_config)        # 按指定 dtype/device 创建模型结构
+load_model(self.model, config.model)             # 将权重加载进已经创建好的模型
+...
+torch.set_default_device("cpu")                # 初始化结束后恢复默认设备
+torch.set_default_dtype(default_dtype)          # 恢复原默认 dtype，避免污染后续模块
+```
+
+这里的关键点是：`dtype` 是全局默认创建策略的一部分，不是打印日志里的标签。若初始化后忘记恢复默认值，后续新建的 Tensor 可能意外使用 FP16/BF16，造成难以定位的精度或算子兼容问题。`hf_config.dtype` 的具体取值由模型配置决定；FP16 与 BF16 都是 16 bit，但指数位、尾数位和溢出风险不同。
+
+### 12.2 KV Cache 的单个 block 要占多少字节
+
+来源：同文件 `allocate_kv_cache`。
+
+```python
+num_kv_heads = hf_config.num_key_value_heads // self.world_size  # 张量并行后，每个 rank 负责的 KV 头数
+head_dim = getattr(                                         # 优先读取配置中的 head_dim
+    hf_config, "head_dim",                                  # 若没有该字段则使用兼容计算
+    hf_config.hidden_size // hf_config.num_attention_heads,   # 每个头的维度 = hidden_size / Q 头数
+)
+block_bytes = (                                               # 一个 KV block 的存储字节数
+    2                                                         # 2 份：一份 K，一份 V
+    * hf_config.num_hidden_layers                              # 每一层都要保存 KV
+    * self.block_size                                          # block 中包含的 token 数
+    * num_kv_heads                                             # 本 rank 的 KV 头数（GQA 下小于 Q 头数）
+    * head_dim                                                 # 每个头的向量长度
+    * hf_config.dtype.itemsize                                 # 每个标量的字节数；FP16/BF16 都是 2
+)
+```
+
+因此可以把它读成：
+
+```text
+KV block 字节数 = K/V 数量 × 层数 × token 数 × KV 头数 × head_dim × 每元素字节数
+```
+
+这段代码连接了本课的两个结论：
+
+1. FP16 和 BF16 都是 16 bit，所以 `itemsize` 都为 2，**相同形状下 KV Cache 的容量占用相同**；
+2. 它们的数值范围和精度不同，所以“容量相同”不等于“数值行为相同”。当 NPU 上出现 KV Cache 溢出、异常值或精度下降时，要同时检查 `dtype` 和这些形状参数。
+
+### 12.3 代码观察题（将概念算一遍）
+
+假设 `num_hidden_layers=32`、`block_size=16`、`num_kv_heads=4`、`head_dim=128`，并使用 FP16：
+
+```text
+block_bytes = 2 × 32 × 16 × 4 × 128 × 2
+            = 1,048,576 bytes
+            = 1 MiB
+```
+
+若只把 FP16 换成 BF16，结果仍是 1 MiB；若把 `num_kv_heads` 从 4 改为 8，容量则会翻倍。这正是 GQA 降低 KV Cache 存储的代码级证据。
+
+---
+
+## 十三、本课小结
 
 记住以下主线：
 
@@ -338,7 +404,7 @@ value = (-1)^S × (1 + fraction) × 2^E
 
 ---
 
-## 十三、课后习题（10 题）
+## 十四、课后习题（10 题）
 
 ### 第 1 题｜位权理解
 
@@ -582,7 +648,7 @@ BF16：1 bit 符号 + 8 bit 指数 +  7 bit 尾数
 
 ---
 
-## 十四、本章学习评估与夯实判定
+## 十五、本章学习评估与夯实判定
 
 ### 当前掌握情况
 
@@ -800,7 +866,7 @@ value = (-1)^S × (1 + fraction) × 2^(e - bias)
 
 ---
 
-## 十五、第 01 课最终评估
+## 十六、第 01 课最终评估
 
 ### 结论：达到进入 L0.3 的门槛
 

@@ -83,6 +83,23 @@ AI_ridge = P_peak / BW
 
 ---
 
+## 五点五、nano-vLLM 代码观察：KV Cache 写入为何受带宽影响
+
+来源：`llm_learning/nano-vllm/nanovllm/layers/attention.py`。
+
+```python
+N, num_heads, head_dim = key.shape                         # N 个 token，每个 token 有多个 KV 头
+D = num_heads * head_dim                                   # 一个 token 的 KV 向量长度
+key = tl.load(key_ptr + key_offsets)                       # 从临时 Tensor 读取 K
+value = tl.load(value_ptr + value_offsets)                 # 从临时 Tensor 读取 V
+tl.store(k_cache_ptr + cache_offsets, key)                 # 将 K 写入 KV Cache
+tl.store(v_cache_ptr + cache_offsets, value)               # 将 V 写入 KV Cache
+```
+
+Decode 阶段每步只新增少量计算，却要反复读取历史 K/V；因此常表现为内存带宽瓶颈。估算算术强度时，至少要把 K/V 的读写字节数和 `dtype.itemsize` 纳入，而不能只数乘加次数。
+
+---
+
 ## 六、带做例题
 
 某算子需要 `240 GFLOPs`，外部 DDR 读写总量 `60 GB`。芯片峰值计算性能 `120 TFLOP/s`，持续带宽 `600 GB/s`。

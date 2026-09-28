@@ -364,6 +364,23 @@ scores:  [4, 8, 64, 64]
 
 提示：先找 `qkv.split(...)`、RoPE 调用和 `context.is_prefill` 分支。最后一题的关键词是 Flash Attention 的分块计算与避免把完整 score 矩阵写回高带宽内存。
 
+### 逐行注释版：QKV 到 Attention
+
+来源：`llm_learning/nano-vllm/nanovllm/models/qwen3.py`。
+
+```python
+qkv = self.qkv_proj(hidden_states)                            # [..., q_size + kv_size + kv_size]
+q, k, v = qkv.split([self.q_size, self.kv_size, self.kv_size], dim=-1)  # 沿 hidden 维拆成 Q/K/V
+q = q.view(-1, self.num_heads, self.head_dim)                  # Q: [token, Q_heads, head_dim]
+k = k.view(-1, self.num_kv_heads, self.head_dim)              # K: [token, KV_heads, head_dim]
+v = v.view(-1, self.num_kv_heads, self.head_dim)              # V: [token, KV_heads, head_dim]
+q, k = self.rotary_emb(positions, q, k)                       # 只给 Q/K 注入位置信息
+o = self.attn(q, k, v)                                        # 计算 Attention，不把 V 送进 RoPE
+output = self.o_proj(o.flatten(1, -1))                        # 合并 head 维，再做输出投影
+```
+
+注意 `-1` 代表把前面的 token 维自动推断出来；真正排查 shape 时，必须把它还原成具体的 `batch、sequence_length` 或扁平 token 数。
+
 ---
 
 ## 十二、本轮批改与夯实
@@ -514,6 +531,22 @@ Attention score：     [batch_size, num_heads, sequence_length, sequence_length]
 
 **请补答：** `sequence_length_query=10` 表示________；`sequence_length_key=10` 表示________。
 
-本轮三题必须全部正确，再进入 MHA、MQA、GQA 与 KV Cache；因为这三项是下一节所有 shape 推导的基础。
+**我的补答：** 序列长度 Q；序列长度 K。
 
-第二轮当前为 2/3 完整正确。补答最后两个维度的含义后完成本节最终评估。
+**批改：正确。** 更完整地说：
+
+- `sequence_length_query` 表示发起查询的 query token 位置，对应 score 矩阵的行；
+- `sequence_length_key` 表示被查询、被比较的 key token 位置，对应 score 矩阵的列；
+- `score[..., query_position, key_position]` 表示该 query token 对该 key token 的注意力分数。
+
+例如 `score [3,4,10,10]` 中，对每个 batch、每个 head，都有一张 `10×10` 的位置关系表：10 个 query 位置分别与 10 个 key 位置计算分数。
+
+### 12.5 第 06 课最终评估
+
+第二轮复测为 **3/3 完整正确**：
+
+- `head_dim=32`；
+- Q/K/V shape 为 `[3,4,10,32]`；
+- score shape 为 `[3,4,10,10]`，并能区分 query 位置与 key 位置。
+
+**结论：第 06 课通过。** 可以进入下一段：MHA、MQA、GQA 与 KV Cache。后续仍会在新 shape 中间隔复习 query/key 两个序列维度的语义。

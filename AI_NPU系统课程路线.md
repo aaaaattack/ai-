@@ -42,9 +42,9 @@
 - L0.6 NCHW、NHWC、Attention Tensor shape
 - L0.7 FLOPs、TOPS、带宽、延迟、吞吐和利用率
 
-**当前状态：** L0.1～L0.3 已通过；L3 与 L4 作为自学模块保留；当前进入 L2.1 Transformer、Q/K/V 与 Attention Tensor shape。后续保留 bias、特殊值和 subnormal 的间隔复习。
+**当前状态：** L0.1～L0.3 已通过；L3 与 L4 作为自学模块保留；L2.1 Q/K/V 与 Attention Tensor shape 已通过，当前进入 L2.2 MHA、MQA、GQA 与 KV Cache。后续保留 bias、特殊值和 subnormal 的间隔复习。
 
-**代码结合学习：** 已建立 `AI_NPU代码结合学习地图.md`。课程按“CS336 笔记恢复概念 → nano-vLLM 追最小实现 → ModelZoo 对照真实部署”的顺序连接；当前 L2.1 只做代码阅读和 shape 追踪，不要求运行模型或设备工具。
+**代码结合学习：** 已建立 `AI_NPU代码结合学习地图.md`。课程按“CS336 笔记恢复概念 → nano-vLLM 追最小实现 → ModelZoo 对照真实部署”的顺序连接；当前 L2.2 阅读 nano-vLLM 中 Qwen3 Attention、KV Cache、block table 与 slot mapping 的真实实现，不修改第三方源码。
 
 ### 近期学习安排
 
@@ -78,7 +78,7 @@ L3 的非对称量化、校准、粒度、PTQ/QAT、混合精度与常见方法�
 - Decoder-only LLM、MoE 与长上下文
 - ViT、VLM、VLA、Action Token 与 Diffusion Policy
 
-**当前状态：** 待学习；Q/K/V shape 与 GQA 较薄弱。
+**当前状态：** L2.1 Q/K/V 与 Attention Tensor shape 已通过；L2.2 已完成 MHA/MQA/GQA、KV Cache、block table 与 slot mapping 的概念学习，容量与映射计算留作间隔复习。按当前学习安排进入 L2.3 RoPE：理解如何向 Q/K 注入位置与相对位置信息，再连接 nano-vLLM 的 Qwen3 实现。
 
 ## L3：量化
 
@@ -88,6 +88,9 @@ L3 的非对称量化、校准、粒度、PTQ/QAT、混合精度与常见方法�
 - PTQ、QAT、校准、outlier、敏感层与 mixed precision
 - W8A8、W8A16、W4A16、W4A8
 - SmoothQuant、AWQ、GPTQ
+ - LoRA、QLoRA、量化基座与参数高效微调
+
+ **补充主题位置：** LoRA 先连接 L2 的 Transformer Linear，再放在 L3 量化之后学习 QLoRA、merge/unmerged、重新量化与部署验收；相关误差进入 L7 精度 Debug。
 
 **当前状态：** 待学习；属于最高优先级薄弱项。
 
@@ -107,8 +110,13 @@ L3 的非对称量化、校准、粒度、PTQ/QAT、混合精度与常见方法�
 - Unsupported OP、Graph Break、CPU Fallback
 - Layout Conversion、Memory Planning、Memcpy、同步
 - 编译日志和 Runtime 日志分析
+- 专题案例：`AI_NPU系统课程_L5_Compiler_Runtime与LUT职责边界.md`
+  - `PyTorch → Q 图 → IR → Lowering → Runtime → NPU` 全链路
+  - 量化前端、编译器、Runtime 与硬件的职责边界
+  - LUT/FakeQuant/归一化/设备执行误差的分层定位
+  - 根据 First Bad Stage 决定下一步实验与对接团队
 
-**当前状态：** 待学习；已有日志现象识别能力。
+**当前状态：** 已补充未编号的 LUT 职责边界专题；Compiler/Runtime 主干课程仍待系统学习。
 
 ## L6：AI Infra 和推理优化
 
@@ -117,6 +125,7 @@ L3 的非对称量化、校准、粒度、PTQ/QAT、混合精度与常见方法�
 - PagedAttention、Prefix Cache、Chunked Prefill
 - TP、PP、DP 与 Speculative Decoding
 - TTFT、TPOT、Prefill/Decode 吞吐
+**投机解码专题位置：** 放在 L6 的 Prefill/Decode、KV Cache 和 TTFT/TPOT 之后，先讲 draft/verify、接受率和候选树，再连接 L8 的端到端性能拆解。DFlash 2 作为不占正式课号的工程补充案例，覆盖 block-parallel draft、local dynamic convolution、candidate selector 和目标硬件验收。
 
 **当前状态：** 待学习；已理解 TTFT/TPOT 基本概念。
 
@@ -128,7 +137,9 @@ L3 的非对称量化、校准、粒度、PTQ/QAT、混合精度与常见方法�
 - 逐层 dump、敏感层与 mixed precision
 - 根因假设、单变量实验和证据闭环
 
-**当前状态：** 待学习；具备初步定位意识。
+**当前状态：** 待正式学习；具备初步定位意识。已保留一个不占用课号的《GR00T Visual 精度 Debug》L7 补充实战案例：涵盖四路对比、伪线索排除、ONNX initializer、加载后重初始化与重新 PTQ 验收。完成 L1 模型加载/ONNX 与 L3 量化基础后，按该案例进行正式交互式训练。
+
+**双案例实战安排：** Visual 侧增加 V1～V5 参数与加载取证实验；新增不编号的 [Prefill 案例](AI_NPU系统课程_L7_GR00T_Prefill精度Debug实战.md)，设置 P1～P5 FX/PTQ 消融、校准对照、混精生效检查与部署验收实验。先读 [资源清单](AI_NPU_GR00T双案例_实战方案与资源清单.md)，按离线证据、GPU 复现、设备验收逐步实践。当前 RoPE 正式课进度保持。
 
 ## L8：性能 Debug
 
